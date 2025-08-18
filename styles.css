@@ -20,9 +20,9 @@ justify-content: center;
 min-height: 100vh;
 align-items: center;
 width: 100%;
-background-image: url("img/jbCNvTM4gwr2qV8X8fW3ZB.png");
 background-repeat: no-repeat;
 background-size: cover;
+background-color: black;
 backdrop-filter: blur(8px);
 -webkit-backdrop-filter: blur(8px);
 }
@@ -68,6 +68,19 @@ body > * {
     font-weight: 400;
     opacity: 0.6;
 }
+
+
+#visualizer {
+  /* estilos del canvas */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+
 
 #progreso {
     appearance: none;

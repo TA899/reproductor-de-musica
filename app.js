@@ -118,3 +118,101 @@ anterior.addEventListener('click', function() {
 
 
 ActualizarInfoCancion();
+
+
+const audio = document.getElementById("cancion");
+const canvas = document.getElementById("visualizer");
+const ctx = canvas.getContext("2d");
+
+// Web Audio API
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const source = audioCtx.createMediaElementSource(audio);
+const analyser = audioCtx.createAnalyser();
+
+source.connect(analyser);
+analyser.connect(audioCtx.destination);
+
+analyser.fftSize = 256;
+const bufferLength = analyser.frequencyBinCount;
+const dataArray = new Uint8Array(bufferLength);
+
+const numFiguras = 30;
+const figuras = [];
+
+for (let i = 0; i < numFiguras; i++) {
+  figuras.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    baseX: 0, // offset para animación explosiva
+    baseY: 0,
+    baseRadius: 15 + Math.random() * 25,
+    hueOffset: Math.random() * 360,
+    velocityX: 0,
+    velocityY: 0
+  });
+}
+
+// Dibujar y animar
+function draw() {
+  requestAnimationFrame(draw);
+  analyser.getByteFrequencyData(dataArray);
+
+  ctx.fillStyle = "rgba(0,0,0,0.1)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  figuras.forEach((fig, i) => {
+    const index = Math.floor(i * (bufferLength / numFiguras));
+    const intensity = dataArray[index] / 255;
+
+    // efecto “explosión”: solo para frecuencias altas
+    if (index > bufferLength * 0.6) {
+      const angle = Math.random() * 2 * Math.PI;
+      const force = intensity * 10;
+      fig.velocityX += Math.cos(angle) * force;
+      fig.velocityY += Math.sin(angle) * force;
+    }
+
+    // Aplicar velocidad y fricción
+    fig.baseX += fig.velocityX;
+    fig.baseY += fig.velocityY;
+    fig.velocityX *= 0.9;
+    fig.velocityY *= 0.9;
+    // Retornar suavemente a posición original
+    fig.baseX *= 0.95;
+    fig.baseY *= 0.95;
+
+    const radius = fig.baseRadius * (0.5 + intensity);
+    const color = `hsl(${(fig.hueOffset + performance.now()*0.02)%360}, 100%, ${intensity*60+20}%)`;
+
+    const drawX = fig.x + fig.baseX;
+    const drawY = fig.y + fig.baseY;
+
+    // Círculo
+    ctx.beginPath();
+    ctx.arc(drawX, drawY, radius, 0, Math.PI*2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Triángulo pulsante
+    ctx.beginPath();
+    const triSize = radius;
+    ctx.moveTo(drawX, drawY - triSize);
+    ctx.lineTo(drawX - triSize, drawY + triSize);
+    ctx.lineTo(drawX + triSize, drawY + triSize);
+    ctx.closePath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+}
+
+audio.onplay = () => {
+  if(audioCtx.state === "suspended") audioCtx.resume();
+  draw();
+};
+
+window.addEventListener("resize", () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
